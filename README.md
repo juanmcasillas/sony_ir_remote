@@ -1,100 +1,87 @@
 # Sony IR Remote
 
-I don't have the TV remote, so I need to hide the info from the top (I+) so I can see the screen xD
+I don't have the TV remote, so I need to hide the info from the top (I+) so I can see the screen. The **i+** is located top left. 
+Shows channel info (or HDMI data).
 
-## Some data
+<img src="docs/RM-ED009.jpg"></img>
 
-  * model SONY KDL-32S3000
-  * https://www.sony.es/electronics/support/televisions-projectors-lcd-tvs/kdl-32s3000/specifications
-  * remote: RM-ED009
-  * https://lirc-remotes.sourceforge.net/remotes-table.html
-  * https://github.com/bengtmartensson/Infrared4Arduino
-  *  https://forum.arduino.cc/t/ir-tinkering-and-sony-tv-remote/11283
-  * https://www.flyrobo.in/blog/universal-remote
-  
-  * https://www.hifi-remote.com/sony/
-  * https://github.com/probonopd/irdb/tree/master/codes
-	      * The code for the button: i+	Sony20	26	73	84
-        * Use https://github.com/bengtmartensson/IrScrutinizer to create an arduino export for the LIRC database file.
-        * https://sourceforge.net/p/lirc-remotes/code/ci/master/tree/remotes/sony/RM-ED009.lircd.conf
+## Some data about the TV.
 
+  * model SONY KDL-32S3000. [Sony TV data](https://www.sony.es/electronics/support/televisions-projectors-lcd-tvs/kdl-32s3000/specifications)
+  * remote: RM-ED009. [Lirc remote database](https://lirc-remotes.sourceforge.net/remotes-table.html)
 
+<img src="docs/tvlabel.jpeg" height="300px"></img>
+
+Btw, the TV was found in a trash bin, working fine.
+
+## So, what to do ?
+
+The idea is create a simple IR transmitter, that sends the code. Sony uses a propietary IR protocol, so
+I check the Lirc database, and found [The Irdb](https://github.com/probonopd/irdb) database. I check the
+remote model and button info:
 
 ```
-begin remote
-
-  name  Sony_RM-ED009-12
-  bits           12
-  flags SPACE_ENC|CONST_LENGTH
-  eps            30
-  aeps          100
-
-  header       2478   476
-  one          1276   513
-  zero          660   513
-  gap          44664
-  toggle_bit_mask 0x0
-
-      begin codes
-          KEY_INFO                 0x5D0                     #  Was: info
-          KEY_POWER                0xA90                     #  Was: power
-          pic                      0x3B0
-          ab                       0xE90
-          KEY_RED                  0x338                     #  Was: red
-          KEY_GREEN                0xB38                     #  Was: green
-          KEY_YELLOW               0x738                     #  Was: yellow
-          KEY_BLUE                 0xF38                     #  Was: blue
-          input                    0xA50
-          KEY_UP                   0x2F0                     #  Was: up
-          KEY_DOWN                 0xAF0                     #  Was: down
-          KEY_LEFT                 0x2D0                     #  Was: left
-          KEY_OK                   0xA70                     #  Was: ok
-          KEY_RIGHT                0xCD0                     #  Was: right
-          KEY_MENU                 0x070                     #  Was: menu
-          analog                   0x1D0
-          KEY_1                    0x010                     #  Was: one
-          KEY_2                    0x810                     #  Was: two
-          KEY_3                    0x410                     #  Was: three
-          KEY_4                    0xC10                     #  Was: four
-          KEY_5                    0x210                     #  Was: five
-          KEY_6                    0xA10                     #  Was: six
-          KEY_7                    0x610                     #  Was: seven
-          KEY_8                    0xE10                     #  Was: eight
-          KEY_9                    0x110                     #  Was: nine
-          KEY_TEXT                 0xFD0                     #  Was: txt
-          KEY_0                    0x910                     #  Was: zero
-          refresh                  0xDD0
-          KEY_VOLUMEUP             0x490                     #  Was: vol_up
-          KEY_VOLUMEDOWN           0xC90                     #  Was: vol_down
-          KEY_CHANNELUP            0x090                     #  Was: chan_up
-          KEY_CHANNELDOWN          0x890                     #  Was: chan_down
-          KEY_MUTE                 0x290                     #  Was: mute
-      end codes
-
-end remote
-
-begin remote
-
-  name  Sony_RM-ED009-15
-  bits           15
-  flags SPACE_ENC|CONST_LENGTH
-  eps            30
-  aeps          100
-
-  header       2482   475
-  one          1267   520
-  zero          658   520
-  gap          44664
-  toggle_bit_mask 0x0
-
-      begin codes
-          aspect                   0x5E25
-          KEY_EPG                  0x6D25                    #  Was: guide
-          KEY_ENTER                0x62E9                    #  Was: return
-          tools                    0x36E9
-          digital                  0x25EE
-          theatre                  0x03EE
-      end codes
-
-end remote
+Button i+	Protocol Sony20	26	73	84
 ```
+
+But these codes are not useful. So checking the [irdb](https://github.com/probonopd/irdb) project I found an amazing project:
+[IrScrutinizer](https://github.com/bengtmartensson/IrScrutinizer). This project is a ir lab to tinker with ir data, and among 
+another things, does export code for arduino based on [Lirc remote database](https://lirc-remotes.sourceforge.net/remotes-table.html)
+files. 
+
+I installed **IrScrutinizer** (It's a Java app, so works multiplatform), import the remote <a href="docs/RM-ED009.lircd.conf"></a> 
+[Online version](https://sourceforge.net/p/lirc-remotes/code/ci/master/tree/remotes/sony/RM-ED009.lircd.conf) configuration
+file, and export it as arduino sketch. So far so good.
+
+## Builing the remote.
+
+The arduino sketch is generated, so we need to wire it up. First of all, I will use an arduino micro. If you check the
+documentation on the generated sketch, it points to [Infrared4Arduino](https://github.com/bengtmartensson/Infrared4Arduino)
+the IR library for arduino. It says that in the Arduino Micro, Sender PIN (GPIO) is 9, and Capture PIN (GPIO) is 4. We only
+use Sender (XMIT) pin. 
+
+<img src="docs/arduino.jpg"></img>.
+```
+Pinout 
+
+PIN 9 to LED IR POSITIVE
+PIN GND to LED GND
+```
+
+To compile the sketch, use the Arduino Micro Board, and install (from manage library) the **Infrared** library.
+Upload, and set the serial baud to `115200`. Here is the script: [irduino.ino](irduino/irduino.ino)
+
+**HINT**: to test the circuit, load `blink.ino`, change the pin to 9 (both in `setup` and `loop`) and check with
+your phone camara that the led is flashing.
+
+<img src="docs/check.jpeg" width="400px"></img>
+
+## Using the remote.
+
+The library allows you to send *any* of the remote command. In our case, the command is `1`: as shown:
+
+```C
+  ...
+    switch (commandno) {
+    case 1:
+        sendRaw(NULL, 0U, repeat_KEY_INFO, 26U, 40000UL, times);
+        break;
+    case 2:
+  ...
+```
+
+In order to get it working, I have to comment `NUMBER_OF_SENDS` and send it as 3, (or leave it and put a 3)
+
+<img src="docs/sending.jpeg" width="400px"></img>
+ 
+```C
+// Define to 3 for Sony devices.
+// #define NUMBER_OF_SENDS 1
+```
+
+So here it is! before/after using the remote :-)
+
+<img src="docs/before.jpeg" height="300px"></img>
+<img src="docs/after.jpeg" height="300px"></img>
+
+Hope you find it useful !
